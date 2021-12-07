@@ -9,12 +9,13 @@ from sklearn.metrics import mean_squared_error as mse
 import copy
 from multiprocessing import Process
 from multiprocessing import Queue
+from multiprocessing import Pool
 
 class AutoML:
     #models to use: Ridge, Neural Network, KNN
     #performance measure to use: MSE
     crossValidation = sklearn.model_selection.KFold(n_splits=5, shuffle=True, random_state=None)
-    max_runtime_seconds = 10
+    max_runtime_seconds = 30
     start_time = None
     logging_enabled = False
 
@@ -44,7 +45,6 @@ class AutoML:
 
     def train_neural_network(self, X, y):
         best_performance = None
-        best_model = None
 
         #tuning params ranges
         #n layers and n neurons are somewhat related , i would only optimize for unrelated tuning params
@@ -58,12 +58,8 @@ class AutoML:
             "alpha": self.get_random_in_range(alpha_min, alpha_max)
         }
 
-        #This is the base model
-        best_model = MLPRegressor(
-            hidden_layer_sizes=[current_params["n_neurons_l_1"], current_params["n_neurons_l_2"]], 
-            solver="adam", 
-            alpha=current_params["alpha"])
-        best_performance = self.crossval(best_model, X, y)
+        #These are the base stats
+        best_performance = self.crossval(current_params, X, y)
         best_params = copy.deepcopy(current_params)
         #This is the tracker for the solution that might not be the best, but is definetly the one that originated from the parameters
         current_performance = best_performance
@@ -74,23 +70,24 @@ class AutoML:
                 print("Temperature = ", temp)
             new_params = self.parameter_step_mlp(current_params, temp, n_neurons_min, n_neurons_max)
             
-            if(self.logging_enabled):
-                print("Starting crossval with parameters ", new_params)
             candidate_performance = self.crossval(new_params, X, y)
 
-            if(candidate_performance > best_performance):
+            #lower performance is better -> MSE
+            #determine if this is the best model
+            if(candidate_performance < best_performance):
                 best_performance = candidate_performance
                 best_params = copy.deepcopy(current_params)
                 if(self.logging_enabled):
                     print("New best ", best_performance, " achieved with ", best_params)
-            else:
-                performance_difference = current_performance - candidate_performance
-                metropolis = exp(-performance_difference / temp)
-                if(performance_difference < 0 or rnd() < metropolis):
-                    current_params = new_params
-                    current_performance = candidate_performance
-                    if(self.logging_enabled):
-                        print("New current ", current_performance, " achieved with ", current_params)
+            
+            #The special step concerning simulated annealing
+            performance_difference = candidate_performance - current_performance
+            metropolis = exp(-performance_difference / temp)
+            if(performance_difference < 0 or rnd() < metropolis):
+                current_params = new_params
+                current_performance = candidate_performance
+                if(self.logging_enabled):
+                    print("New current ", current_performance, " achieved with ", current_params)
 
             temp = self.current_temperature()
         return {
@@ -100,7 +97,7 @@ class AutoML:
             "current_params": current_params
         }
     
-    def model_from_params(params):
+    def model_from_params(self, params):
         return MLPRegressor(
                         hidden_layer_sizes=[params["n_neurons_l_1"], params["n_neurons_l_2"]], 
                         solver="adam", 
@@ -110,15 +107,15 @@ class AutoML:
         tune_which = rnd()
         new_params = copy.deepcopy(current_params)
         if(tune_which < 1/3):
-            new_params["n_neurons_l_1"] = self.clamp(
+            new_params["n_neurons_l_1"] = int(self.clamp(
                 new_params["n_neurons_l_1"] + rnd() * temp * n_neurons_max,
                 n_neurons_min,
-                n_neurons_max)
+                n_neurons_max))
         elif(tune_which < 2/3):
-            new_params["n_neurons_l_1"] = self.clamp(
+            new_params["n_neurons_l_1"] = int(self.clamp(
                 new_params["n_neurons_l_1"] + rnd() * temp * n_neurons_max,
                 n_neurons_min,
-                n_neurons_max)
+                n_neurons_max))
         else:
             new_params["alpha"] = new_params["alpha"] + rnd() * temp
         return new_params
@@ -127,25 +124,23 @@ class AutoML:
         return max(min_val, min(max_val, val))
     
     def crossval(self, params, X, y):
-        mses = []
-        ps = []
-        for train_indeces, test_indeces in self.crossValidation.split(X):
-            queue = Queue()
-            p = Process(target=self.fit_mlp, 
-                  args=(train_indeces, test_indeces, params, queue))
-            p.start()
-        for p in ps:
-            p.join()
-        queue.get()
-            
-        return sum(mses) / len(mses)
+        if(self.logging_enabled):
+                print("Starting crossval with parameters ", params)
+        starParams = map(lambda indeces: [indeces[0], indeces[1], params, X, y],
+                        self.crossValidation.split(X))
+        with Pool() as pool:
+            mses = pool.starmap(self.fit_mlp, starParams)
+            mean_mse = sum(mses) / len(mses)
+            if(self.logging_enabled):
+                print("Crossval results ", mses, " with mean ",mean_mse )       
+            return mean_mse
 
-    def fit_mlp(self, train_indeces, test_indeces, params, queue):
+    def fit_mlp(self, train_indeces, test_indeces, params, X, y):
         X_train, X_test = X.iloc[train_indeces], X.iloc[test_indeces]
         y_train, y_test = y.iloc[train_indeces], y.iloc[test_indeces]
         model = self.model_from_params(params)
         model.fit(X_train, y_train)
-        queue.put(mse(y_test, model.predict(X_test)))
+        return mse(y_test, model.predict(X_test))
 
     def get_random_in_range(self, min, max, is_int = False):
         diff = max - min
@@ -159,7 +154,7 @@ class AutoML:
         return time.time() - self.start_time
     
     def current_temperature(self):
-        return self.elapsed_time() / self.max_runtime_seconds
+        return 1 - self.elapsed_time() / self.max_runtime_seconds
 
 
 if __name__ == "__main__":
