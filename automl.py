@@ -22,7 +22,7 @@ class AutoML:
     done = False
     best_model = None
 
-    def __init__(self, logging_enabled = False, max_runtime_seconds = 60 * 60):
+    def __init__(self, logging_enabled = False, max_runtime_seconds = 3600):
         self.logging_enabled = logging_enabled
         self.max_runtime_seconds = max_runtime_seconds
 
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     X = X.join(pd.get_dummies(X["cbwd"])).drop("cbwd", axis="columns").drop("pm2.5", axis="columns")
 
     X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=None)
-    automl = AutoML(logging_enabled=True)
+    automl = AutoML(logging_enabled=True, max_runtime_seconds=60)
     automl.fit(X_train, y_train)
     y_pred = automl.predict(X_test)
     result = mse(y_test, y_pred)
