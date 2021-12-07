@@ -5,20 +5,21 @@ import sklearn.model_selection
 import time
 from random import random as rnd
 import copy
-from multiprocessing import Process
-from multiprocessing import Queue
 from multiprocessing import Pool
 from MlpManager import MlpManager
 from RidgeManager import RidgeManager
 from NestablePool import NestablePool
+from sklearn.metrics import mean_squared_error as mse
 
 class AutoML:
     #models to use: Ridge, Neural Network, KNN
     #performance measure to use: MSE
     crossValidation = sklearn.model_selection.KFold(n_splits=5, shuffle=True, random_state=None)
-    max_runtime_seconds = 60
+    max_runtime_seconds = 1
     start_time = None
     logging_enabled = False
+    done = False
+    best_model = None
 
     def __init__(self, logging_enabled = False):
         self.logging_enabled = logging_enabled
@@ -37,9 +38,23 @@ class AutoML:
                 map(lambda manager: [manager, X, y],
                 solution_managers))
             print(results)
+            
+            best_res = None
+            for result in results:
+                if(best_res == None or result["best_performance"] < best_res["best_performance"]):
+                    best_res = result
+            
+            print("Got the best results with ", result["manager"].__class__.__name__)
+            print("Parameters used were: ", result["best_params"])
+            self.best_model = result["manager"].fit(result["best_params"], X, y)
+
+        self.done = True
 
     def predict(self, X_new):
-        pass
+        if not self.done:
+            print("Please train the model before trying to predict data with it!")
+        else:
+            return self.best_model.predict(X_new)
 
     def do_validation(self, X, y):
         for index, value in X.isna().sum().items():
@@ -93,7 +108,8 @@ class AutoML:
             "best_params": best_params,
             "best_performance": best_performance,
             "current_performance": current_performance,
-            "current_params": current_params
+            "current_params": current_params,
+            "manager": solution_manager
         }       
     
     def crossval(self, manager, params, X, y):
@@ -102,7 +118,7 @@ class AutoML:
         starParams = map(lambda indeces: [indeces[0], indeces[1], params, X, y],
                         self.crossValidation.split(X))
         with Pool(5) as pool:
-            mses = pool.starmap(manager.fit, starParams)
+            mses = pool.starmap(manager.fit_and_get_mse, starParams)
             mean_mse = sum(mses) / len(mses)
             if(self.logging_enabled):
                 print("Crossval results ", mses, " with mean ",mean_mse )       
@@ -126,5 +142,6 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=None)
     automl = AutoML(logging_enabled=True)
     automl.fit(X_train, y_train)
-    #mlp = MLPRegressor()
-    #mlp.fit(X=X_train, y=y_train)
+    y_pred = automl.predict(X_test)
+    result = mse(y_test, y_pred)
+    print("Final model got a MSE of ", result)

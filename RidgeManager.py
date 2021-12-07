@@ -22,9 +22,13 @@ class RidgeManager:
     def model_from_params(params):
         return Ridge(alpha=params["alpha"])
 
-    def fit(self, train_indeces, test_indeces, params, X, y):
+    def fit(self, params, X, y):
+        model = RidgeManager.model_from_params(params)
+        model.fit(X, y)
+        return model
+    
+    def fit_and_get_mse(self, train_indeces, test_indeces, params, X, y):
         X_train, X_test = X.iloc[train_indeces], X.iloc[test_indeces]
         y_train, y_test = y.iloc[train_indeces], y.iloc[test_indeces]
-        model = RidgeManager.model_from_params(params)
-        model.fit(X_train, y_train)
+        model = self.fit(params, X_train, y_train)
         return mse(y_test, model.predict(X_test))
