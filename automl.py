@@ -16,14 +16,15 @@ class AutoML:
     #models to use: Ridge, Neural Network, KNN
     #performance measure to use: MSE
     crossValidation = sklearn.model_selection.KFold(n_splits=5, shuffle=True, random_state=None)
-    max_runtime_seconds = 1
+    max_runtime_seconds = None
     start_time = None
     logging_enabled = False
     done = False
     best_model = None
 
-    def __init__(self, logging_enabled = False):
+    def __init__(self, logging_enabled = False, max_runtime_seconds = 60 * 60):
         self.logging_enabled = logging_enabled
+        self.max_runtime_seconds = max_runtime_seconds
 
     def fit(self, X, y):
         if not self.do_validation(X, y):
