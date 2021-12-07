@@ -1,16 +1,18 @@
+from sklearn.linear_model import ElasticNet
 import helpers
 from random import random as rnd
 import copy
-from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error as mse
 
-class RidgeManager:
+class ElasticNetManager:
     alpha_min, alpha_max = 0, 1
+    l1_min, l1_max = 0, 1
 
     def generate_params(self):
         #the tuning paramters are being saved in a map, so we can deep copy them later and mutate them wihout affecting the base ones
         return {
-            "alpha": helpers.get_random_in_range(self.alpha_min, self.alpha_max)
+            "alpha": helpers.get_random_in_range(self.alpha_min, self.alpha_max),
+            "l1": helpers.get_random_in_range(self.l1_min, self.l1_max)
         }
     
     def parameter_step(self, current_params, temp):
@@ -19,14 +21,19 @@ class RidgeManager:
             new_params["alpha"] + rnd() * temp,
             self.alpha_min,
             self.alpha_max)
+        new_params["l1"] = helpers.clamp(
+            new_params["l1"] + rnd() * temp,
+            self.l1_min,
+            self.l1_max
+        )
         return new_params
     
     @staticmethod
     def model_from_params(params):
-        return Ridge(alpha=params["alpha"])
+        return ElasticNet(alpha=params["alpha"], l1_ratio=params["l1"])
 
     def fit(self, params, X, y):
-        model = RidgeManager.model_from_params(params)
+        model = ElasticNetManager.model_from_params(params)
         model.fit(X, y)
         return model
     

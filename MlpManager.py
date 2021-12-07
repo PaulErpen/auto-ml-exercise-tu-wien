@@ -35,7 +35,10 @@ class MlpManager:
                 self.n_neurons_min,
                 self.n_neurons_max))
         else:
-            new_params["alpha"] = new_params["alpha"] + rnd() * temp
+            new_params["alpha"] = helpers.clamp(
+                new_params["alpha"] + rnd() * temp,
+                self.alpha_min,
+                self.alpha_max)
         return new_params
     
     @staticmethod

@@ -6,6 +6,7 @@ import time
 from random import random as rnd
 import copy
 from multiprocessing import Pool
+from ElasticNetManager import ElasticNetManager
 from MlpManager import MlpManager
 from RidgeManager import RidgeManager
 from NestablePool import NestablePool
@@ -30,7 +31,8 @@ class AutoML:
         self.start_time = time.time()
         solution_managers = [
             MlpManager(len(X.columns)),
-            RidgeManager()
+            RidgeManager(),
+            ElasticNetManager(),
         ]
         with NestablePool(5) as pool:
             results = pool.starmap(
@@ -39,14 +41,15 @@ class AutoML:
                 solution_managers))
             print(results)
             
+            #selecting the best of the created models
             best_res = None
             for result in results:
                 if(best_res == None or result["best_performance"] < best_res["best_performance"]):
                     best_res = result
             
-            print("Got the best results with ", result["manager"].__class__.__name__)
-            print("Parameters used were: ", result["best_params"])
-            self.best_model = result["manager"].fit(result["best_params"], X, y)
+            print("Got the best results with ", best_res["manager"].__class__.__name__)
+            print("Parameters used were: ", best_res["best_params"])
+            self.best_model = best_res["manager"].fit(best_res["best_params"], X, y)
 
         self.done = True
 
