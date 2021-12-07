@@ -1,15 +1,14 @@
 from math import exp
 import sklearn.model_selection
 import pandas as pd
-from sklearn.neural_network import MLPRegressor
 import sklearn.model_selection
 import time
 from random import random as rnd
-from sklearn.metrics import mean_squared_error as mse
 import copy
 from multiprocessing import Process
 from multiprocessing import Queue
 from multiprocessing import Pool
+from MlpManager import MlpManager
 
 class AutoML:
     #models to use: Ridge, Neural Network, KNN
@@ -26,7 +25,7 @@ class AutoML:
         if not self.do_validation(X, y):
             return
         self.start_time = time.time()
-        res_mlp = self.train_neural_network(X, y)
+        res_mlp = self.simulated_annealing("mlp", X, y)
         print(res_mlp["best_performance"])
         pass
 
@@ -43,23 +42,18 @@ class AutoML:
             return False
         return True
 
-    def train_neural_network(self, X, y):
+    def simulated_annealing(self, type, X, y):
         best_performance = None
 
-        #tuning params ranges
-        #n layers and n neurons are somewhat related , i would only optimize for unrelated tuning params
-        n_neurons_min, n_neurons_max = int(len(X.columns) / 2), len(X.columns) * 2
-        alpha_min, alpha_max = 0, 1
-
-        #the tuning paramters are being saved in a map, so we can deep copy them later and mutate them wihout affecting the base ones
-        current_params = {
-            "n_neurons_l_1": self.get_random_in_range(n_neurons_min, n_neurons_max, is_int=True),
-            "n_neurons_l_2": self.get_random_in_range(n_neurons_min, n_neurons_max, is_int=True),
-            "alpha": self.get_random_in_range(alpha_min, alpha_max)
+        solution_managers = {
+            "mlp": MlpManager(len(X.columns))
         }
 
+        solution_manager = solution_managers[type]
+        current_params = solution_manager.generate_params(X)
+
         #These are the base stats
-        best_performance = self.crossval(current_params, X, y)
+        best_performance = self.crossval(solution_manager, current_params, X, y)
         best_params = copy.deepcopy(current_params)
         #This is the tracker for the solution that might not be the best, but is definetly the one that originated from the parameters
         current_performance = best_performance
@@ -68,9 +62,10 @@ class AutoML:
         while(temp > 0):
             if(self.logging_enabled):
                 print("Temperature = ", temp)
-            new_params = self.parameter_step_mlp(current_params, temp, n_neurons_min, n_neurons_max)
+            #Taking a step in a random "direction"
+            new_params = solution_manager.parameter_step(current_params, temp)
             
-            candidate_performance = self.crossval(new_params, X, y)
+            candidate_performance = self.crossval(solution_manager, new_params, X, y)
 
             #lower performance is better -> MSE
             #determine if this is the best model
@@ -95,60 +90,19 @@ class AutoML:
             "best_performance": best_performance,
             "current_performance": current_performance,
             "current_params": current_params
-        }
+        }       
     
-    def model_from_params(self, params):
-        return MLPRegressor(
-                        hidden_layer_sizes=[params["n_neurons_l_1"], params["n_neurons_l_2"]], 
-                        solver="adam", 
-                        alpha=params["alpha"])
-
-    def parameter_step_mlp(self, current_params, temp, n_neurons_min, n_neurons_max):
-        tune_which = rnd()
-        new_params = copy.deepcopy(current_params)
-        if(tune_which < 1/3):
-            new_params["n_neurons_l_1"] = int(self.clamp(
-                new_params["n_neurons_l_1"] + rnd() * temp * n_neurons_max,
-                n_neurons_min,
-                n_neurons_max))
-        elif(tune_which < 2/3):
-            new_params["n_neurons_l_1"] = int(self.clamp(
-                new_params["n_neurons_l_1"] + rnd() * temp * n_neurons_max,
-                n_neurons_min,
-                n_neurons_max))
-        else:
-            new_params["alpha"] = new_params["alpha"] + rnd() * temp
-        return new_params
-    
-    def clamp(self, val, min_val, max_val):
-        return max(min_val, min(max_val, val))
-    
-    def crossval(self, params, X, y):
+    def crossval(self, manager, params, X, y):
         if(self.logging_enabled):
                 print("Starting crossval with parameters ", params)
         starParams = map(lambda indeces: [indeces[0], indeces[1], params, X, y],
                         self.crossValidation.split(X))
         with Pool() as pool:
-            mses = pool.starmap(self.fit_mlp, starParams)
+            mses = pool.starmap(manager.fit, starParams)
             mean_mse = sum(mses) / len(mses)
             if(self.logging_enabled):
                 print("Crossval results ", mses, " with mean ",mean_mse )       
             return mean_mse
-
-    def fit_mlp(self, train_indeces, test_indeces, params, X, y):
-        X_train, X_test = X.iloc[train_indeces], X.iloc[test_indeces]
-        y_train, y_test = y.iloc[train_indeces], y.iloc[test_indeces]
-        model = self.model_from_params(params)
-        model.fit(X_train, y_train)
-        return mse(y_test, model.predict(X_test))
-
-    def get_random_in_range(self, min, max, is_int = False):
-        diff = max - min
-        val = rnd() * diff + min
-        if(is_int):
-            return int(val)
-        else:
-            return val
 
     def elapsed_time(self):
         return time.time() - self.start_time
