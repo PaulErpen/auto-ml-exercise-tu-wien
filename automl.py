@@ -40,7 +40,10 @@ class AutoML:
                 self.simulated_annealing,
                 map(lambda manager: [manager, X, y],
                 solution_managers))
-            print(results)
+            pool.close()
+            pool.join()
+            if(self.logging_enabled):
+                print(results)
             
             #selecting the best of the created models
             best_res = None
@@ -123,6 +126,8 @@ class AutoML:
                         self.crossValidation.split(X))
         with Pool(5) as pool:
             mses = pool.starmap(manager.fit_and_get_mse, starParams)
+            pool.close()
+            pool.join()
             mean_mse = sum(mses) / len(mses)
             if(self.logging_enabled):
                 print("Crossval results ", mses, " with mean ",mean_mse )       
