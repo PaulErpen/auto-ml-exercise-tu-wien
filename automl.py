@@ -9,12 +9,14 @@ from multiprocessing import Process
 from multiprocessing import Queue
 from multiprocessing import Pool
 from MlpManager import MlpManager
+from RidgeManager import RidgeManager
+from NestablePool import NestablePool
 
 class AutoML:
     #models to use: Ridge, Neural Network, KNN
     #performance measure to use: MSE
     crossValidation = sklearn.model_selection.KFold(n_splits=5, shuffle=True, random_state=None)
-    max_runtime_seconds = 30
+    max_runtime_seconds = 60
     start_time = None
     logging_enabled = False
 
@@ -25,9 +27,16 @@ class AutoML:
         if not self.do_validation(X, y):
             return
         self.start_time = time.time()
-        res_mlp = self.simulated_annealing("mlp", X, y)
-        print(res_mlp["best_performance"])
-        pass
+        solution_managers = [
+            MlpManager(len(X.columns)),
+            RidgeManager()
+        ]
+        with NestablePool(5) as pool:
+            results = pool.starmap(
+                self.simulated_annealing,
+                map(lambda manager: [manager, X, y],
+                solution_managers))
+            print(results)
 
     def predict(self, X_new):
         pass
@@ -42,15 +51,10 @@ class AutoML:
             return False
         return True
 
-    def simulated_annealing(self, type, X, y):
+    def simulated_annealing(self, solution_manager, X, y):
         best_performance = None
 
-        solution_managers = {
-            "mlp": MlpManager(len(X.columns))
-        }
-
-        solution_manager = solution_managers[type]
-        current_params = solution_manager.generate_params(X)
+        current_params = solution_manager.generate_params()
 
         #These are the base stats
         best_performance = self.crossval(solution_manager, current_params, X, y)
@@ -97,7 +101,7 @@ class AutoML:
                 print("Starting crossval with parameters ", params)
         starParams = map(lambda indeces: [indeces[0], indeces[1], params, X, y],
                         self.crossValidation.split(X))
-        with Pool() as pool:
+        with Pool(5) as pool:
             mses = pool.starmap(manager.fit, starParams)
             mean_mse = sum(mses) / len(mses)
             if(self.logging_enabled):

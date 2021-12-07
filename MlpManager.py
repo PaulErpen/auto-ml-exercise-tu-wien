@@ -5,17 +5,15 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.metrics import mean_squared_error as mse
 
 class MlpManager:
+    #tuning params ranges
+    #n layers and n neurons are somewhat related , i would only optimize for unrelated tuning params
     n_neurons_min, n_neurons_max = None, None
     alpha_min, alpha_max = 0, 1
 
     def __init__(self, n_columns):
         self.n_neurons_min, self.n_neurons_max = int(n_columns / 2), n_columns * 2
 
-    def generate_params(self, X):
-        #tuning params ranges
-        #n layers and n neurons are somewhat related , i would only optimize for unrelated tuning params
-        
-
+    def generate_params(self):
         #the tuning paramters are being saved in a map, so we can deep copy them later and mutate them wihout affecting the base ones
         return {
             "n_neurons_l_1": helpers.get_random_in_range(self.n_neurons_min, self.n_neurons_max, is_int=True),

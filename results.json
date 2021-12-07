@@ -1,0 +1,26 @@
+[
+    {
+        "best_params": {
+            "n_neurons_l_1": 23,
+            "n_neurons_l_2": 27,
+            "alpha": 0.43478789568951937
+        },
+        "best_performance": 5548.2429878226285,
+        "current_performance": 5548.2429878226285,
+        "current_params": {
+            "n_neurons_l_1": 23,
+            "n_neurons_l_2": 27,
+            "alpha": 0.43478789568951937
+        }
+    },
+    {
+        "best_params": {
+            "alpha": 0.7829555231424078
+        },
+        "best_performance": 6189.828607724581,
+        "current_performance": 6189.841803808635,
+        "current_params": {
+            "alpha": 0.8083072560087089
+        }
+    }
+]
