@@ -21,10 +21,18 @@ class AutoML:
     logging_enabled = False
     done = False
     best_model = None
+    csv_output_enabled = False
+    csv_output_folder = ""
 
-    def __init__(self, logging_enabled = False, max_runtime_seconds = 3600):
+    def __init__(self, 
+            logging_enabled = False, 
+            max_runtime_seconds = 3600,
+            csv_output_enabled=False,
+            csv_output_folder="output"):
         self.logging_enabled = logging_enabled
         self.max_runtime_seconds = max_runtime_seconds
+        self.csv_output_enabled = csv_output_enabled
+        self.csv_output_folder = csv_output_folder
 
     def fit(self, X, y):
         if not self.do_validation(X, y):
@@ -74,50 +82,87 @@ class AutoML:
         return True
 
     def simulated_annealing(self, solution_manager, X, y):
-        best_performance = None
+        folder = ""
+        if self.csv_output_folder is not None and self.csv_output_folder:
+            folder = self.csv_output_folder + "/"
+        csv_output_filename = folder + solution_manager.__class__.__name__+".csv"
+        with open(csv_output_filename, "a") as csv_dump_file:
+            best_performance = None
 
-        current_params = solution_manager.generate_params()
+            current_params = solution_manager.generate_params()
 
-        #These are the base stats
-        best_performance = self.crossval(solution_manager, current_params, X, y)
-        best_params = copy.deepcopy(current_params)
-        #This is the tracker for the solution that might not be the best, but is definetly the one that originated from the parameters
-        current_performance = best_performance
-
-        temp = self.current_temperature()
-        while(temp > 0):
-            if(self.logging_enabled):
-                print("Temperature = ", temp)
-            #Taking a step in a random "direction"
-            new_params = solution_manager.parameter_step(current_params, temp)
-            
-            candidate_performance = self.crossval(solution_manager, new_params, X, y)
-
-            #lower performance is better -> MSE
-            #determine if this is the best model
-            if(candidate_performance < best_performance):
-                best_performance = candidate_performance
-                best_params = copy.deepcopy(current_params)
-                if(self.logging_enabled):
-                    print("New best ", best_performance, " achieved with ", best_params)
-            
-            #The special step concerning simulated annealing
-            performance_difference = candidate_performance - current_performance
-            metropolis = exp(-performance_difference / temp)
-            if(performance_difference < 0 or rnd() < metropolis):
-                current_params = new_params
-                current_performance = candidate_performance
-                if(self.logging_enabled):
-                    print("New current ", current_performance, " achieved with ", current_params)
+            #These are the base stats
+            best_performance = self.crossval(solution_manager, current_params, X, y)
+            best_params = copy.deepcopy(current_params)
+            #This is the tracker for the solution that might not be the best, but is definetly the one that originated from the parameters
+            current_performance = best_performance
 
             temp = self.current_temperature()
-        return {
-            "best_params": best_params,
-            "best_performance": best_performance,
-            "current_performance": current_performance,
-            "current_params": current_params,
-            "manager": solution_manager
-        }       
+            while(temp > 0):
+                if(self.logging_enabled):
+                    print("Temperature = ", temp)
+                #Taking a step in a random "direction"
+                new_params = solution_manager.parameter_step(current_params, temp)
+                
+                mses = self.crossval(solution_manager, new_params, X, y)
+                candidate_performance = sum(mses) / len(mses)
+                if(self.logging_enabled):
+                    print("Crossval results ", mses, " with mean ",candidate_performance)
+
+                #lower performance is better -> MSE
+                #determine if this is the best model
+                is_best = False
+                if(candidate_performance < best_performance):
+                    best_performance = candidate_performance
+                    best_params = copy.deepcopy(current_params)
+                    is_best = True
+                    if(self.logging_enabled):
+                        print("New best ", best_performance, " achieved with ", best_params)
+                
+                #The special step concerning simulated annealing
+                performance_difference = candidate_performance - current_performance
+                metropolis = exp(-performance_difference / temp)
+                is_current = False
+                if(performance_difference < 0 or rnd() < metropolis):
+                    is_current = True
+                    current_params = new_params
+                    current_performance = candidate_performance
+                    if(self.logging_enabled):
+                        print("New current ", current_performance, " achieved with ", current_params)
+
+                if(self.csv_output_enabled):
+                    self.dump_data(
+                        csv_dump_file,
+                        temperature=temp,
+                        rmse=candidate_performance,
+                        params=new_params,
+                        is_best=is_best,
+                        is_current=is_current)
+
+                temp = self.current_temperature()
+            return {
+                "best_params": best_params,
+                "best_performance": best_performance,
+                "current_performance": current_performance,
+                "current_params": current_params,
+                "manager": solution_manager
+            }
+
+    def dump_data(self, csv_dump_file, temperature, rmse, params, is_best, is_current):
+        #Write performance to file
+        csv_dump_file.write(self.elapsed_time()) 
+        csv_dump_file.write(",")
+        csv_dump_file.write(temperature) 
+        csv_dump_file.write(",") 
+        csv_dump_file.write(rmse)
+        csv_dump_file.write(",")
+        for key, param in params.items():
+            csv_dump_file.write(param)
+            csv_dump_file.write(",")
+        csv_dump_file.write(is_best)
+        csv_dump_file.write(",")
+        csv_dump_file.write(is_current)
+        csv_dump_file.write("\n")
     
     def crossval(self, manager, params, X, y):
         if(self.logging_enabled):
@@ -127,11 +172,8 @@ class AutoML:
         with Pool(5) as pool:
             mses = pool.starmap(manager.fit_and_get_mse, starParams)
             pool.close()
-            pool.join()
-            mean_mse = sum(mses) / len(mses)
-            if(self.logging_enabled):
-                print("Crossval results ", mses, " with mean ",mean_mse )       
-            return mean_mse
+            pool.join()       
+            return mses
 
     def elapsed_time(self):
         return time.time() - self.start_time
