@@ -1,6 +1,25 @@
 # Auto ML
 
-This project implements auto ml based on simulated annealing.
+This project implements Auto-ML based on simulated annealing.
+There are also scripts that utilize auto-sklearn and tpot on the same data sets.
+This enables us to compare the performance of our own auto-ml solution to others.
+
+## How to use
+
+The code for the Auto-ML solution is located in the ``AutoML`` directory.
+There are example scripts of how to use all of the three Auto-ML solutions in the training directory.
+For the beijing2.5 data for example, the scripts are located in the ``training/beijing`` directory.
+
+Each script does the following:
+* Load the dataset
+* Minimally preprocess the data set so it only contains numerical data and no missing values
+* Train the Auto-ML solution
+* Compute the MSE for the model computed by the Auto-ML solution
+* Save the model to a file that can be loaded again
+
+In order to analyze the custom Auto-ML solution it also logs its parameter tuning process in multiple CSV-files.
+How the CSV-files are structured is described in the ```Tuning outputs``` section.
+In order for each data set to have its own CSV-logs, please provide the custom Auto-ML solution with a unique directory to save the files to.
 
 ## Tuning outputs
 
