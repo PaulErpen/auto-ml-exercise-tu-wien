@@ -3,7 +3,7 @@ import sklearn.model_selection
 
 import pandas as pd
 
-df_beijing = pd.read_csv("./data/beijing.csv")
+df_beijing = pd.read_csv("../../data/beijing.csv")
 
 df_beijing = df_beijing.drop("No", axis="columns").dropna()
 y = df_beijing["pm2.5"]
@@ -16,4 +16,4 @@ automl = TPOTRegressor()
 automl.fit(X_train, y_train)
 y_hat = automl.score(X_test, y_test)
 print("Accuracy score", sklearn.metrics.accuracy_score(y_test, y_hat))
-automl.export('beijing_export.py')
+automl.export('./DumpedModels/beijing_tpot.py')
