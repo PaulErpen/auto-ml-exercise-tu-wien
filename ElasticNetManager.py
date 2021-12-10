@@ -17,15 +17,16 @@ class ElasticNetManager:
     
     def parameter_step(self, current_params, temp):
         new_params = copy.deepcopy(current_params)
-        new_params["alpha"] = helpers.clamp(
-            new_params["alpha"] + helpers.get_random_in_range(-1, 1) * temp,
+        new_params["alpha"] = helpers.get_value_step_with_unsticky(
+            new_params["alpha"],
             self.alpha_min,
-            self.alpha_max)
-        new_params["l1"] = helpers.clamp(
-            new_params["l1"] + helpers.get_random_in_range(-1, 1) * temp,
+            self.alpha_max,
+            temp)
+        new_params["l1"] = helpers.get_value_step_with_unsticky(
+            new_params["l1"],
             self.l1_min,
-            self.l1_max
-        )
+            self.l1_max,
+            temp)
         return new_params
     
     @staticmethod

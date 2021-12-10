@@ -15,10 +15,11 @@ class RidgeManager:
     
     def parameter_step(self, current_params, temp):
         new_params = copy.deepcopy(current_params)
-        new_params["alpha"] = helpers.clamp(
-            new_params["alpha"] + helpers.get_random_in_range(-1, 1) * temp,
+        new_params["alpha"] = helpers.get_value_step_with_unsticky(
+            new_params["alpha"],
             self.alpha_min,
-            self.alpha_max)
+            self.alpha_max,
+            temp)
         return new_params
     
     @staticmethod

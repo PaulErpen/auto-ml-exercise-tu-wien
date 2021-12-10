@@ -22,23 +22,24 @@ class MlpManager:
         }
     
     def parameter_step(self, current_params, temp):
-        tune_which = rnd()
         new_params = copy.deepcopy(current_params)
-        if(tune_which < 1/3):
-            new_params["n_neurons_l_1"] = int(helpers.clamp(
-                new_params["n_neurons_l_1"] + helpers.get_random_in_range(-1, 1) * temp * self.n_neurons_max,
+        new_params["n_neurons_l_1"] = int(
+            helpers.get_value_step_with_unsticky(
+                new_params["n_neurons_l_1"],
                 self.n_neurons_min,
-                self.n_neurons_max))
-        elif(tune_which < 2/3):
-            new_params["n_neurons_l_1"] = int(helpers.clamp(
-                new_params["n_neurons_l_1"] + helpers.get_random_in_range(-1, 1) * temp * self.n_neurons_max,
+                self.n_neurons_max,
+                temp))
+        new_params["n_neurons_l_2"] = int(
+            helpers.get_value_step_with_unsticky(
+                new_params["n_neurons_l_2"],
                 self.n_neurons_min,
-                self.n_neurons_max))
-        else:
-            new_params["alpha"] = helpers.clamp(
-                new_params["alpha"] + helpers.get_random_in_range(-1, 1) * temp,
+                self.n_neurons_max,
+                temp))
+        new_params["alpha"] = helpers.get_value_step_with_unsticky(
+                new_params["alpha"],
                 self.alpha_min,
-                self.alpha_max)
+                self.alpha_max,
+                temp)
         return new_params
     
     @staticmethod
