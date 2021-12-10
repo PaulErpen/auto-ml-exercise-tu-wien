@@ -13,7 +13,7 @@ df_crab = df_crab.drop("Sex", axis="columns")
 y = df_crab.copy(deep=True)["Age"]
 X = df_crab.copy(deep=True).drop("Age", axis="columns")
 
-X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
+X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=123)
 
 automl = AutoML(logging_enabled=True, max_runtime_seconds=60*60, csv_output_enabled=True, csv_output_folder="./output/crab-age")
 automl.fit(X_train, y_train)
