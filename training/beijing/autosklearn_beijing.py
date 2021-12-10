@@ -1,7 +1,7 @@
-from tpot import TPOTRegressor
-import sklearn.model_selection
-
+import autosklearn.regression
+from sklearn.metrics import mean_squared_error as mse
 import pandas as pd
+from joblib import dump
 
 df_beijing = pd.read_csv("../../data/beijing.csv")
 
@@ -12,8 +12,8 @@ X = X.join(pd.get_dummies(X["cbwd"])).drop("cbwd", axis="columns")
 
 X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
 
-automl = TPOTRegressor()
-automl.fit(X_train, y_train)
-y_hat = automl.score(X_test, y_test)
-print("Accuracy score", sklearn.metrics.accuracy_score(y_test, y_hat))
-automl.export('./DumpedModels/beijing_tpot.py')
+autoSklearn = autosklearn.regression.AutoSklearnRegressor()
+autoSklearn.fit(X_train, y_train)
+y_pred = autoSklearn.predict(X_test)
+print("MSE score", mse(y_test, y_pred))
+dump(autoSklearn, "./DumpedModels/beijing_autosklearn.joblib")
