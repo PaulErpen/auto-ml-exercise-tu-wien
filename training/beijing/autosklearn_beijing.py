@@ -1,9 +1,10 @@
 import autosklearn.regression
 from sklearn.metrics import mean_squared_error as mse
 import pandas as pd
+import sklearn
 from joblib import dump
 
-df_beijing = pd.read_csv("../../data/beijing.csv")
+df_beijing = pd.read_csv("./data/beijing.csv")
 
 df_beijing = df_beijing.drop("No", axis="columns").dropna()
 y = df_beijing["pm2.5"]
