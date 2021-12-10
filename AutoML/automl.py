@@ -24,16 +24,19 @@ class AutoML:
     best_model = None
     csv_output_enabled = False
     csv_output_folder = ""
+    n_iterations = 1000
 
     def __init__(self, 
             logging_enabled = False, 
             max_runtime_seconds = 3600,
             csv_output_enabled=False,
-            csv_output_folder="output"):
+            csv_output_folder="output", 
+            n_iterations = 1000):
         self.logging_enabled = logging_enabled
         self.max_runtime_seconds = max_runtime_seconds
         self.csv_output_enabled = csv_output_enabled
         self.csv_output_folder = csv_output_folder
+        self.n_iterations = n_iterations
 
     def fit(self, X, y):
         if not self.do_validation(X, y):
@@ -99,8 +102,8 @@ class AutoML:
         #This is the tracker for the solution that might not be the best, but is definetly the one that originated from the parameters
         current_performance = best_performance
 
-        temp = self.current_temperature()
-        while(temp > 0):
+        for nth_iteration in range(self.n_iterations):
+            temp = self.current_temperature(nth_iteration)
             if(self.logging_enabled):
                 print("Temperature = ", temp)
             #Taking a step in a random "direction"
@@ -140,8 +143,6 @@ class AutoML:
                     params=new_params,
                     is_best=is_best,
                     is_current=is_current)
-
-            temp = self.current_temperature()
         csv_dump_file.close()
         return {
             "best_params": best_params,
@@ -181,8 +182,9 @@ class AutoML:
     def elapsed_time(self):
         return time.time() - self.start_time
     
-    def current_temperature(self):
-        return 1 - self.elapsed_time() / self.max_runtime_seconds
+    #using fast simulated annealing
+    def current_temperature(self, nth_iteration):
+        return 1.0 / float(nth_iteration + 1)
 
 
 if __name__ == "__main__":
