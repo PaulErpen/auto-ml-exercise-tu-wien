@@ -8,7 +8,7 @@ This enables us to compare the performance of our own auto-ml solution to others
 
 The code for the Auto-ML solution is located in the ``AutoML`` directory.
 There are example scripts of how to use all of the three Auto-ML solutions in the training directory.
-For the beijing2.5 data for example, the scripts are located in the ``training/beijing`` directory.
+For the beijing2.5 data for example, the scripts are located in the ``training/beijing`` directory. These scripts also contain comments to explain whats goin on.
 
 Each script does the following:
 * Load the dataset
@@ -20,6 +20,8 @@ Each script does the following:
 In order to analyze the custom Auto-ML solution it also logs its parameter tuning process in multiple CSV-files.
 How the CSV-files are structured is described in the ```Tuning outputs``` section.
 In order for each data set to have its own CSV-logs, please provide the custom Auto-ML solution with a unique directory to save the files to.
+If this isn't done the new CSV-logs will override the ones generated for another data set.
+Please make sure that the directory exists, before starting the Auto-ML solution.
 
 ## Tuning outputs
 
