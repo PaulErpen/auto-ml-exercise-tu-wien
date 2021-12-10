@@ -2,7 +2,7 @@
 
 This project implements Auto-ML based on simulated annealing.
 There are also scripts that utilize auto-sklearn and tpot on the same data sets.
-This enables us to compare the performance of our own auto-ml solution to others.
+This enables us to compare the performance of our own Auto-Ml solution to others.
 
 ## How to use
 
