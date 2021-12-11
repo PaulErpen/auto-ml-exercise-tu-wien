@@ -12,8 +12,8 @@ X = df_crab.copy(deep=True).drop("Age", axis="columns")
 
 X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=123)
 
-tpot = TPOTRegressor()
+tpot = TPOTRegressor(generations=None, max_time_mins=60)
 tpot.fit(X_train, y_train)
 y_pred = tpot.predict(X_test)
 print("MSE score", mse(y_test, y_pred))
-dump(tpot, "./DumpedModels/crab-age_tpot.joblib")
+tpot.export("./DumpedModels/crab_tpot.py")

@@ -17,7 +17,7 @@ class AutoML:
     #models to use: Ridge, Neural Network, KNN
     #performance measure to use: MSE
     crossValidation = sklearn.model_selection.KFold(n_splits=5, shuffle=True, random_state=None)
-    max_runtime_seconds = None
+    runtime_seconds = None
     start_time = None
     logging_enabled = False
     done = False
@@ -27,11 +27,11 @@ class AutoML:
 
     def __init__(self, 
             logging_enabled = False, 
-            max_runtime_seconds = 3600,
+            runtime_seconds = 3600,
             csv_output_enabled=False,
             csv_output_folder="output"):
         self.logging_enabled = logging_enabled
-        self.max_runtime_seconds = max_runtime_seconds
+        self.runtime_seconds = runtime_seconds
         self.csv_output_enabled = csv_output_enabled
         self.csv_output_folder = csv_output_folder
 
@@ -182,7 +182,7 @@ class AutoML:
         return time.time() - self.start_time
     
     def current_temperature(self):
-        return 1 - self.elapsed_time() / self.max_runtime_seconds
+        return 1 - self.elapsed_time() / self.runtime_seconds
 
 
 if __name__ == "__main__":
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     X = X.join(pd.get_dummies(X["cbwd"])).drop("cbwd", axis="columns").drop("pm2.5", axis="columns")
 
     X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=None)
-    automl = AutoML(logging_enabled=True, max_runtime_seconds=60*5, csv_output_enabled=True)
+    automl = AutoML(logging_enabled=True, runtime_seconds=60*5, csv_output_enabled=True)
     automl.fit(X_train, y_train)
     y_pred = automl.predict(X_test)
     y_pred = automl.predict(X_test)

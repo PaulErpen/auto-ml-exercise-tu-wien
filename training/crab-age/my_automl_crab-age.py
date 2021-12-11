@@ -1,5 +1,6 @@
 from sklearn.metrics import mean_squared_error as mse
 import pandas as pd
+import sklearn
 from joblib import dump
 import sys
 import os
