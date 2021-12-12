@@ -28,5 +28,5 @@ automl = load("./DumpedModels/beijing_automl.joblib")
 #Get the final MSE of the best model
 y_pred = automl.predict(X_test)
 result = mse(y_test, y_pred)
-print("Final model got a MSE of ", result)
+print("Final model got a MSE of ", result, " with modle of type ", automl.get_best_solution_algorithm_name())
 
