@@ -16,7 +16,7 @@ X = df_crab.copy(deep=True).drop("Age", axis="columns")
 
 X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=123)
 
-automl = AutoML(logging_enabled=True, max_runtime_seconds=60*60, csv_output_enabled=True, csv_output_folder="./output/crab-age")
+automl = AutoML(logging_enabled=True, runtime_seconds=60*60, csv_output_enabled=True, csv_output_folder="./output/crab-age")
 automl.fit(X_train, y_train)
 y_pred = automl.predict(X_test)
 print("MSE score", mse(y_test, y_pred))

@@ -25,7 +25,7 @@ X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y
 #create and configure the Auto-ML solution
 #CAREFUL! Please provide a custom csv_output_folder, otherwise the CSV-files of other data sets get overridden
 automl = AutoML(logging_enabled=True, 
-    max_runtime_seconds=60*60, 
+    runtime_seconds=60*60, 
     csv_output_enabled=True, 
     csv_output_folder="./output/beijing")
 

@@ -2,6 +2,7 @@ from sklearn.metrics import mean_squared_error as mse
 import pandas as pd
 from joblib import dump
 from tpot import TPOTRegressor
+import sklearn
 
 df_crab = pd.read_csv("./data/crab-age.csv")
 
