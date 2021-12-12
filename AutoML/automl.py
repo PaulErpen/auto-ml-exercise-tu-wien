@@ -123,7 +123,10 @@ class AutoML:
             
             #The special step concerning simulated annealing
             performance_difference = candidate_performance - current_performance
-            metropolis = exp(-performance_difference / temp)
+            try:
+                metropolis = exp(-performance_difference / temp)
+            except OverflowError:
+                metropolis = float('inf')
             is_current = False
             if(performance_difference < 0 or rnd() < metropolis):
                 is_current = True
@@ -183,6 +186,12 @@ class AutoML:
     
     def current_temperature(self):
         return 1 - self.elapsed_time() / self.runtime_seconds
+    
+    def get_best_solution_algorithm_name(self):
+        if(self.best_model != None):
+            return self.best_model.__class__.__name__
+        else:
+            return "Not trained yet!"
 
 
 if __name__ == "__main__":
