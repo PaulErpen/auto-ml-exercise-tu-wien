@@ -4,6 +4,25 @@ This project implements Auto-ML based on simulated annealing.
 There are also scripts that utilize auto-sklearn and tpot on the same data sets.
 This enables us to compare the performance of our own Auto-Ml solution to others.
 
+## Structure of this Repository
+
+The ``AutoML`` directory contains code for our own Auto-ML solution.
+
+The ``CSVLogsProcessing`` directory contains a jupyter notebook to Process the CSV logs.
+
+The ``data`` directory contains all the data sets. The fifa data set is included in its preprocessed state.
+
+The ``DumpedModels`` directory contains the results of the Auto-ML training.
+Sadly we weren't able to include the trained models for autosklearn and our Auto-ML. This were dumps created with joblib and had very huge sizes. A single dump could be up to 250 MB.
+
+The ``eval`` directory contains scripts to retrieve the performance from the dumped model.
+
+The ``output`` directory contains the CSV-logs created by our own AutoML solution.
+
+The ``Preprocessing`` directory contains the Jupyter Notebook used to preprocess the FIFA data set.
+
+The ``training`` directory contains all the scripts for training the Auto-ML models.
+
 ## How to use
 
 The code for the Auto-ML solution is located in the ``AutoML`` directory.
