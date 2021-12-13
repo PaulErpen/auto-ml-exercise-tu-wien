@@ -4,7 +4,7 @@ from sklearn.metrics import mean_squared_error as mse
 import pandas as pd
 from joblib import dump
 
-df_fifa = pd.read_csv("./data/fifa_final.csv")
+df_fifa = pd.read_csv("./data/fifa_preprocessed.csv")
 
 y = df_fifa.copy(deep=True)["Value"]
 X = df_fifa.copy(deep=True).drop("Value", axis='columns')

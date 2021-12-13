@@ -43,6 +43,7 @@ for positions_array in df_fifa["Preferred Positions"].apply(lambda positions: po
 
 for position in positions_set:
     df_fifa["Preferred Position " + position] = df_fifa["Preferred Positions"].apply(lambda pos: pos.split(" ")).apply(lambda pos_arr: position in pos_arr)
+    df_fifa["Preferred Position " + position] = df_fifa["Preferred Position " + position].astype(int)
 
 df_fifa = df_fifa.drop("Preferred Positions", axis="columns")
 
@@ -74,3 +75,5 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=123)
 reg = LassoCV(cv=5, random_state=0).fit(X, y)
 y_pred = reg.predict(X_test)
 print("Test set performance: ", mse(y_true=y_test, y_pred=y_pred))
+
+df_fifa.to_csv("./data/fifa_preprocessed.csv")
